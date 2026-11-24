@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="ky">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Билимдүү кайыкчылар</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:15px;
+ text-align:center;
+ font-family:Arial,sans-serif;
+ background:linear-gradient(#65d1f5,#0879aa);
+ color:white;
+}
+h1{color:#fff4a6;text-shadow:2px 3px 5px #17445d}
+.game{
+ max-width:850px;margin:auto;
+ background:white;color:#222;
+ border-radius:20px;overflow:hidden;
+ box-shadow:0 8px 25px #0005;
+}
+.scene{
+ height:290px;position:relative;overflow:hidden;
+ background:linear-gradient(#a6e8ff 0%,#d8f6ff 45%,#25a5d0 46%,#0875a9 100%);
+}
+.sun{position:absolute;right:15%;top:15px;font-size:55px}
+.cloud{position:absolute;left:12%;top:25px;font-size:45px}
+.shore{
+ position:absolute;right:0;top:145px;
+ width:95px;height:145px;
+ background:#d9b66d;border-radius:45% 0 0 0;
+ z-index:2;
+}
+.shore:before{
+ content:"🌴";position:absolute;top:-65px;left:5px;
+ font-size:60px;
+}
+.finish{position:absolute;right:85px;top:150px;font-size:25px;z-index:3}
+.boat{
+ position:absolute;left:10px;
+ font-size:55px;white-space:nowrap;
+ transition:left 1s ease;z-index:4;
+}
+.boat1{top:115px}
+.boat2{top:195px}
+.boat span{font-size:25px}
+.teams{display:flex;gap:10px;padding:15px}
+.team{flex:1;padding:13px;border-radius:12px;font-weight:bold}
+.red{background:#ffe0e0;color:#b22222}
+.blue{background:#dceaff;color:#164da0}
+.content{padding:20px}
+.scores{display:flex;justify-content:space-around;font-size:19px;font-weight:bold}
+#question{font-size:21px;font-weight:bold;min-height:55px;margin:20px 0}
+.answers{display:grid;gap:10px}
+.answer{
+ padding:14px;border:2px solid #dce2e8;
+ border-radius:12px;background:#edf3f8;
+ font-size:17px;cursor:pointer;
+}
+.answer:hover{background:#ffe18c}
+.answer:disabled{opacity:.85;cursor:default}
+#message{min-height:35px;font-weight:bold;color:#08774e;font-size:18px}
+.start{
+ background:#087b56;color:white;border:0;
+ padding:14px 22px;border-radius:12px;
+ font-size:16px;cursor:pointer;margin:7px;
+}
+.start:hover{background:#05563b}
+.progress{height:12px;background:#ddd;border-radius:20px;margin:15px 0;overflow:hidden}
+#bar{height:100%;width:0;background:#e9ae2c;transition:.5s}
+@media(max-width:500px){
+ .scene{height:250px}
+ #question{font-size:18px}
+ .boat{font-size:43px}
+ .shore{width:70px}
+ .finish{right:60px}
+}
+</style>
+</head>
+<body>
+
+<h1>🚣 БИЛИМДҮҮ КАЙЫКЧЫЛАР</h1>
+<p>📚 Кыргыз тили сабагындагы билим таймашы</p>
+
+<div class="game">
+ <div class="scene" id="scene">
+  <div class="sun">☀️</div>
+  <div class="cloud">☁️</div>
+  <div class="finish">🏁</div>
+  <div class="shore"></div>
+  <div class="boat boat1" id="boat1">🚣‍♂️<span>🔴</span></div>
+  <div class="boat boat2" id="boat2">🚣‍♂️<span>🔵</span></div>
+ </div>
+
+ <div class="teams">
+  <div class="team red">🔴 АЛГЫРЛАР</div>
+  <div class="team blue">🔵 БИЛИМДҮҮЛӨР</div>
+ </div>
+
+ <div class="content">
+  <div class="scores">
+   <div>🔴 <span id="s1">0</span> упай</div>
+   <div>🔵 <span id="s2">0</span> упай</div>
+  </div>
+
+  <div class="progress"><div id="bar"></div></div>
+  <p id="round">Оюн баштала элек</p>
+
+  <div id="question">Оюнду баштоо үчүн баскычты бас!</div>
+  <div class="answers" id="answers"></div>
+  <p id="message">Ким биринчи жээкке жетет? 🏆</p>
+
+  <button class="start" onclick="startGame()">▶ ОЮНДУ БАШТОО</button>
+  <button class="start" onclick="resetGame()">🔄 КАЙРА БАШТОО</button>
+ </div>
+</div>
+
+<script>
+const questions = [
+{
+q:"Зат атооч эмнени билдирет?",
+a:["Заттын атын","Заттын сынын","Кыймыл-аракетти"],
+c:0
+},
+{
+q:"Сын атооч кайсы суроолорго жооп берет?",
+a:["Ким? Эмне?","Кандай? Кайсы?","Эмне кылды?"],
+c:1
+},
+{
+q:"Этиш эмнени билдирет?",
+a:["Заттын санын","Заттын атын","Кыймыл-аракетти"],
+c:2
+},
+{
+q:"Кыргыз тилинде канча үндүү тыбыш бар?",
+a:["8","14","12"],
+c:2
+},
+{
+q:"Көптүк маанини билдирген мүчөнү тап.",
+a:["-лар, -лер","-чы, -чи","-га, -ге"],
+c:0
+},
+{
+q:"«Сулуу» сөзүнүн синонимин тап.",
+a:["Чоң","Кооз","Жаман"],
+c:1
+},
+{
+q:"«Узун» сөзүнүн антонимин тап.",
+a:["Кыска","Бийик","Чоң"],
+c:0
+},
+{
+q:"Сүйлөм эмнеден түзүлөт?",
+a:["Тамгалардан гана","Тыбыштардан гана","Сөздөрдөн"],
+c:2
+},
+{
+q:"Кайсынысы энчилүү ат?",
+a:["Шаар","Бишкек","Дарыя"],
+c:1
+},
+{
+q:"Сүйлөмдүн баш мүчөлөрүн тап.",
+a:["Аныктооч, толуктооч","Ээ, баяндооч","Бышыктооч, аныктооч"],
+c:1
+},
+{
+q:"«Китеп» сөзү кайсы сөз түркүмүнө кирет?",
+a:["Зат атооч","Этиш","Сын атооч"],
+c:0
+},
+{
+q:"Кайсы сөз туура жазылган?",
+a:["Мекен","Мекенн","Меекен"],
+c:0
+},
+{
+q:"«Беш» сөзү кайсы сөз түркүмү?",
+a:["Этиш","Сан атооч","Зат атооч"],
+c:1
+},
+{
+q:"Суроо сүйлөмдүн аягына кайсы белги коюлат?",
+a:["Үтүр","Чекит","Суроо белгиси"],
+c:2
+},
+{
+q:"«Акылдуу» сөзү кайсы сөз түркүмүнө кирет?",
+a:["Сын атооч","Зат атооч","Этиш"],
+c:0
+}
+];
+
+let index=0;
+let team=0;
+let scores=[0,0];
+let positions=[0,0];
+let playing=false;
+
+function startGame(){
+ index=0;
+ team=0;
+ scores=[0,0];
+ positions=[0,0];
+ playing=true;
+ update();
+ moveBoats();
+ showQuestion();
+}
+
+function showQuestion(){
+ if(index>=questions.length){
+  finish();
+  return;
+ }
+
+ const q=questions[index];
+ document.getElementById("round").textContent=
+ "Суроо "+(index+1)+" / "+questions.length;
+
+ document.getElementById("bar").style.width=
+ (index/questions.length*100)+"%";
+
+ document.getElementById("question").textContent=
+ (team===0?"🔴 АЛГЫРЛАР":"🔵 БИЛИМДҮҮЛӨР")+" командасы: "+q.q;
+
+ document.getElementById("message").textContent=
+ "Туура жооп берип, кайыгыңарды жээкке жакындаткыла!";
+
+ document.getElementById("answers").innerHTML=
+ q.a.map((a,i)=>
+ `<button class="answer" onclick="checkAnswer(${i})">${a}</button>`
+ ).join("");
+}
+
+function checkAnswer(choice){
+ if(!playing)return;
+
+ const q=questions[index];
+ const buttons=document.querySelectorAll(".answer");
+ buttons.forEach(b=>b.disabled=true);
+
+ if(choice===q.c){
+  scores[team]++;
+  positions[team]++;
+  buttons[choice].style.background="#a8edb8";
+  document.getElementById("message").textContent=
+  "🎉 Азаматсыңар! Кайыгыңар алдыга жылды!";
+ }else{
+  buttons[choice].style.background="#ffaaaa";
+  buttons[q.c].style.background="#a8edb8";
+  document.getElementById("message").textContent=
+  "❌ Туура эмес! Туура жооп: "+q.a[q.c];
+ }
+
+ update();
+ moveBoats();
+
+ if(positions[team]>=5){
+  finish(team);
+  return;
+ }
+
+ index++;
+ team=1-team;
+ setTimeout(showQuestion,1400);
+}
+
+function update(){
+ document.getElementById("s1").textContent=scores[0];
+ document.getElementById("s2").textContent=scores[1];
+}
+
+function moveBoats(){
+ const scene=document.getElementById("scene");
+ const max=scene.clientWidth-145;
+
+ document.getElementById("boat1").style.left=
+ (10+positions[0]*max/5)+"px";
+
+ document.getElementById("boat2").style.left=
+ (10+positions[1]*max/5)+"px";
+}
+
+function finish(winner=null){
+ playing=false;
+ document.getElementById("answers").innerHTML="";
+ document.getElementById("bar").style.width="100%";
+ document.getElementById("question").textContent="🏁 ЖАРЫШ АЯКТАДЫ!";
+
+ if(winner===null){
+  if(scores[0]>scores[1])winner=0;
+  else if(scores[1]>scores[0])winner=1;
+ }
+
+ document.getElementById("message").textContent=
+ winner===null?"🤝 Эки команда тең чыкты!":
+ "🏆 ЖЕҢҮҮЧҮ: "+(winner===0?"🔴 АЛГЫРЛАР!":"🔵 БИЛИМДҮҮЛӨР!");
+
+ document.getElementById("round").textContent=
+ "Жыйынтык: "+scores[0]+" : "+scores[1];
+}
+
+function resetGame(){
+ playing=false;
+ index=0;
+ team=0;
+ scores=[0,0];
+ positions=[0,0];
+ update();
+ moveBoats();
+ document.getElementById("bar").style.width="0%";
+ document.getElementById("round").textContent="Оюн баштала элек";
+ document.getElementById("question").textContent=
+ "Оюнду баштоо үчүн баскычты бас!";
+ document.getElementById("answers").innerHTML="";
+ document.getElementById("message").textContent="Жаңы оюнга даярсыңарбы?";
+}
+
+window.addEventListener("resize",moveBoats);
+</script>
+</body>
+</html>
